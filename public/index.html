@@ -1,33 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Upload</title>
+  <title>@azure/cognitiveservices-customvision-prediction sample</title>
 </head>
 <body>
-    <h1>Image Upload</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="image" accept="image/*" required>
-        <button type="submit">Upload</button>
-    </form>
-    <div id="message"></div>
+  <form id="imageForm" enctype="multipart/form-data" action="/predict" method="POST">
+    <input type="file" name="image" id="imageInput" accept="image/*" required>
+    <input type="submit" value="Submit">
+  </form>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-
-            axios.post('/upload', formData)
-                .then(response => {
-                    const data = response.data;
-                    document.getElementById('message').innerText = data.message;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        });
-    </script>
+  <div id="predictionResult"></div>
+  
 </body>
+<script src="https://cdn.jsdelivr.net/npm/@azure/cognitiveservices-customvision-prediction" defer></script>
+<script>
+
+// Fetch configuration from server
+fetch('/config')
+  .then(response => response.json())
+  .then(config => {
+    customVisionPredictionKey = config.customVisionPredictionKey;
+    endpoint = config.customVisionEndpoint;
+    projectId = config.projectId;
+
+    const form = document.getElementById('imageForm');
+    const fileInput = document.getElementById('imageInput');
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      console.log("Form submitted!");
+
+      const formData = new FormData(form);
+      const file = formData.get('image');
+      console.log("File uploaded:", file); 
+      
+      const credentials = new ApiKeyCredentials({ inHeader: {"Prediction-key": customVisionPredictionKey } });
+      const client = new PredictionAPIClient(credentials, endpoint);
+
+      client
+        .classifyImage(projectId, "Iteration1", file)
+        .then(predictions => {
+          console.log("Extracted predictions:");
+          console.log(predictions);
+
+          // Assuming you have a div with the id "predictionResult" to display the results
+          const predictionResultDiv = document.getElementById('predictionResult');
+          
+          // Clear previous results
+          predictionResultDiv.innerHTML = '';
+
+          // Display the predictions
+          predictions.forEach(prediction => {
+            const resultItem = document.createElement('p');
+            resultItem.textContent = `Tag: ${prediction.tag}, Probability: ${prediction.probability}`;
+            predictionResultDiv.appendChild(resultItem);
+          });
+        })
+        .catch(err => {
+          console.log("An error occurred:");
+          console.error(err);
+        });
+    });
+  })
+  .catch(error => {
+    console.error('Error fetching configuration:', error);
+  });
+</script>
 </html>
