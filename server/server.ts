@@ -38,7 +38,7 @@ app.post('/predict', async (req, res) => {
 	const credentials = new ApiKeyCredentials({ inHeader: {"Prediction-key": customVisionPredictionKey } });
   const client = new PredictionAPIClient(credentials, endpoint);
 
-    // Assuming the file is attached to the 'image' field in the form
+    // file is attached to the 'image' field in the form
     const image = req.files.image;
 
     if (!image) {
